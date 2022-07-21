@@ -16,7 +16,7 @@ dta$date <- as.Date(dta$date, "%Y-%m-%d")
 
 tot_steps <-
   dta %>% group_by(date) %>%
-  summarise(tot_step_perday = sum(steps))
+  summarise(tot_step_perday = sum(steps, na.rm = TRUE))
 
 hist(x = tot_steps$tot_step_perday, 
      xlab = "Bin of Total steps",
@@ -66,6 +66,63 @@ plot( x = min5_avgsteps$interval,
 # FINDING THE DAY OF WEEK-
 
 dta$day <- weekdays(dta$date)
+
+
+# IMPUTING MISSING VALUES WITH THE AVERAGE OF STEPS DURING THAT INTERVAL 
+# ON OTHER DAYS OF THE SAME WEEKDAY -  
+
+
+imp_dta <- dta %>%
+  group_by(interval, day) %>%
+  mutate(steps =  case_when(is.na(steps) ~
+                              round(mean(steps, na.rm = TRUE)),
+                            TRUE ~ steps)) %>%
+  ungroup()
+
+
+# TOTAL NUMBER OF STEPS TAKEN PER DAY with IMPUTED DATA-
+
+imp_tot_steps <-
+  imp_dta %>% group_by(date) %>%
+  summarise(tot_step_perday = sum(steps))
+
+hist(x = imp_tot_steps$tot_step_perday, 
+     xlab = "Bin of Total steps",
+     ylab = "Number of days",
+     main = "Total Number of Steps per Day")
+
+
+# MEAN AND MEDIAN - 
+mean(imp_tot_steps$tot_step_perday, na.rm = TRUE)
+
+median(imp_tot_steps$tot_step_perday, na.rm = TRUE)
+
+
+# Create a new factor variable in the data set with two levels - 
+# "weekday" and "weekend"
+
+
+imp_dta <- imp_dta %>%
+  mutate(day_class = case_when(day %in% c("Saturday", "Sunday") ~ "weekend",
+                               TRUE ~ "weekday"))
+
+
+
+avg_int.day_stp <- imp_dta %>% 
+  group_by(interval, day_class) %>% 
+  summarise(avg_stps = mean(steps) )
+
+
+
+avg_int.day_stp %>% 
+  ggplot( aes(x = interval, y = avg_stps, color = day_class) ) + 
+  facet_wrap( "day_class" , ncol = 1) +
+  geom_line(size = 1) +
+  theme_bw() +
+  xlab("Interval") +
+  ylab("Number of Steps") 
+  
+  
 
 
 
